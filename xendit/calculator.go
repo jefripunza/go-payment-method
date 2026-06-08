@@ -1,5 +1,7 @@
 package xendit
 
+// https://www.xendit.co/en-id/pricing-calculator-id/
+
 import (
 	"fmt"
 	"math"

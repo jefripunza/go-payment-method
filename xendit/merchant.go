@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+// this is xenPlatform
+
 type MerchantResponse struct {
 	Id            string            `json:"id"`
 	Created       string            `json:"created"`
