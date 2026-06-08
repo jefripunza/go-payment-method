@@ -8,3 +8,28 @@ package xendit
 // )
 
 type Option struct{}
+
+const (
+	PaymentMethodCreditCard       = "CREDIT_CARD"
+	PaymentMethodBCA              = "BCA"
+	PaymentMethodBNI              = "BNI"
+	PaymentMethodBSI              = "BSI"
+	PaymentMethodBRI              = "BRI"
+	PaymentMethodMandiri          = "MANDIRI"
+	PaymentMethodPermata          = "PERMATA"
+	PaymentMethodSahabatSampoerna = "SAHABAT_SAMPOERNA"
+	PaymentMethodBNC              = "BNC"
+	PaymentMethodAlfamart         = "ALFAMART"
+	PaymentMethodIndomaret        = "INDOMARET"
+	PaymentMethodOVO              = "OVO"
+	PaymentMethodDana             = "DANA"
+	PaymentMethodShopeePay        = "SHOPEEPAY"
+	PaymentMethodLinkAja          = "LINKAJA"
+	PaymentMethodJeniusPay        = "JENIUSPAY"
+	PaymentMethodDD_BRI           = "DD_BRI"
+	PaymentMethodDD_BCA_KlikPay   = "DD_BCA_KLIKPAY"
+	PaymentMethodKredivo          = "KREDIVO"
+	PaymentMethodAkulaku          = "AKULAKU"
+	PaymentMethodAtome            = "ATOME"
+	PaymentMethodQRIS             = "QRIS"
+)

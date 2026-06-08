@@ -55,7 +55,7 @@ func main() {
 		},
 	}
 
-	invoice, err := client.InvoiceCreate("INV-2024-001", "John Doe", "john.doe@example.com", items, []string{"QRIS"}, 2000)
+	invoice, err := client.InvoiceCreate("INV-2024-001", "John Doe", "john.doe@example.com", items, []string{xendit.PaymentMethodQRIS}, 2000)
 	if err != nil {
 		log.Fatalf("Error creating invoice: %v", err)
 	}
