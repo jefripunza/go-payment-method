@@ -5,19 +5,19 @@ import (
 	"math"
 )
 
-const (
-	vatRate = 0.11
-)
-
 // CalculateMarginPrice menghitung berapa margin yang perlu
 // ditambahkan ke harga agar setelah dipotong fee Xendit,
 // merchant tetap menerima targetNetAmount.
 func CalculateMarginPrice(
-	targetNetAmount int64,
+	targetNetAmount float64,
 	paymentMethod string,
-) (int64, error) {
+	vatRates ...float64,
+) (float64, error) {
 
-	net := float64(targetNetAmount)
+	vatRate := 0.11
+	if len(vatRates) > 0 {
+		vatRate = vatRates[0]
+	}
 
 	var gross float64
 
@@ -34,19 +34,16 @@ func CalculateMarginPrice(
 		PaymentMethodPermata,
 		PaymentMethodSahabatSampoerna,
 		PaymentMethodBNC:
-
-		gross = net + (4000.0 * (1 + vatRate))
+		gross = targetNetAmount + (4000.0 * (1 + vatRate))
 
 	// =========================
 	// Over The Counter
 	// =========================
 	case PaymentMethodAlfamart:
-
-		gross = net + (5000.0 * (1 + vatRate))
+		gross = targetNetAmount + (5000.0 * (1 + vatRate))
 
 	case PaymentMethodIndomaret:
-
-		gross = net + (5500.0 * (1 + vatRate))
+		gross = targetNetAmount + (5500.0 * (1 + vatRate))
 
 	// =========================
 	// E-Wallet
@@ -54,69 +51,46 @@ func CalculateMarginPrice(
 	case PaymentMethodOVO,
 		PaymentMethodDana,
 		PaymentMethodLinkAja:
-
 		rate := 0.015 * (1 + vatRate)
-		gross = net / (1 - rate)
+		gross = targetNetAmount / (1 - rate)
 
 	case PaymentMethodJeniusPay:
-
 		rate := 0.020 * (1 + vatRate)
-		gross = net / (1 - rate)
+		gross = targetNetAmount / (1 - rate)
 
 	case PaymentMethodShopeePay:
+		gross = targetNetAmount / (1 - 0.02)
 
-		gross = net / (1 - 0.02)
-
-	// =========================
-	// Direct Debit
-	// =========================
 	case PaymentMethodDD_BRI,
 		PaymentMethodDD_BCA_KlikPay:
-
 		rate := 0.019 * (1 + vatRate)
-		gross = net / (1 - rate)
+		gross = targetNetAmount / (1 - rate)
 
-	// =========================
-	// Credit Card
-	// =========================
 	case PaymentMethodCreditCard:
-
 		percentRate := 0.029 * (1 + vatRate)
 		fixedFee := 2000.0 * (1 + vatRate)
+		gross = (targetNetAmount + fixedFee) / (1 - percentRate)
 
-		gross = (net + fixedFee) / (1 - percentRate)
-
-	// =========================
-	// PayLater
-	// =========================
 	case PaymentMethodAkulaku:
-
 		rate := 0.017 * (1 + vatRate)
-		gross = net / (1 - rate)
+		gross = targetNetAmount / (1 - rate)
 
 	case PaymentMethodKredivo:
-
 		rate := 0.023 * (1 + vatRate)
-		gross = net / (1 - rate)
+		gross = targetNetAmount / (1 - rate)
 
 	case PaymentMethodAtome:
-
 		rate := 0.050 * (1 + vatRate)
-		gross = net / (1 - rate)
+		gross = targetNetAmount / (1 - rate)
 
-	// =========================
-	// QRIS
-	// =========================
 	case PaymentMethodQRIS:
-
-		gross = net / (1 - 0.007)
+		gross = targetNetAmount / (1 - 0.007)
 
 	default:
 		return 0, fmt.Errorf("unsupported payment method: %s", paymentMethod)
 	}
 
-	grossAmount := int64(math.Ceil(gross))
+	grossAmount := math.Ceil(gross)
 	margin := grossAmount - targetNetAmount
-
 	return margin, nil
 }
