@@ -52,6 +52,28 @@ type MerchantUpdateRequest struct {
 	PublicProfile map[string]string `json:"public_profile"`
 }
 
+type AccountHolderResponse struct {
+	Id         string `json:"id,omitempty"`
+	Type       string `json:"type,omitempty"`
+	Email      string `json:"email,omitempty"`
+	WebsiteURL string `json:"website_url,omitempty"`
+	Status     string `json:"status,omitempty"`
+}
+
+type UpdateAccountHolderRequest struct {
+	WebsiteURL string `json:"website_url,omitempty"`
+}
+
+type TransferResponse struct {
+	Id          string  `json:"id,omitempty"`
+	Reference   string  `json:"reference,omitempty"`
+	Amount      float64 `json:"amount,omitempty"`
+	Status      string  `json:"status,omitempty"`
+	Source      string  `json:"source,omitempty"`
+	Destination string  `json:"destination,omitempty"`
+	Created     string  `json:"created,omitempty"`
+}
+
 // -------------------------------------------------------- //
 
 func (x *Xendit) MerchantCreate(email string, business_name string) (*MerchantResponse, error) {
@@ -129,5 +151,52 @@ func (x *Xendit) MerchantUpdate(id string, email string, business_name string) (
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
 
+	return &result, nil
+}
+
+func (x *Xendit) GetAccountHolder(id string) (*AccountHolderResponse, error) {
+	url := fmt.Sprintf("%s/account_holders/%s", x.BaseUrl, id)
+	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result AccountHolderResponse
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (x *Xendit) AccountHolderUpdate(id string, req *UpdateAccountHolderRequest) (*AccountHolderResponse, error) {
+	url := fmt.Sprintf("%s/account_holders/%s", x.BaseUrl, id)
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, _, err := x.doRequest("PATCH", url, "", "", payload)
+	if err != nil {
+		return nil, err
+	}
+
+	var result AccountHolderResponse
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (x *Xendit) GetTransferByReference(reference string) (*TransferResponse, error) {
+	url := fmt.Sprintf("%s/transfers/reference=%s", x.BaseUrl, reference)
+	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result TransferResponse
+	if err := json.Unmarshal(resp, &result); err != nil {
+		return nil, err
+	}
 	return &result, nil
 }
