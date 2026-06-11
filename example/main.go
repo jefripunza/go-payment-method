@@ -47,7 +47,7 @@ func main() {
 		"table_number": "10",
 	}
 	qris, err := client.QrisCreate(
-		"qris_ref_" + fmt.Sprintf("%d", time.Now().Unix()),
+		"qris_ref_"+fmt.Sprintf("%d", time.Now().Unix()),
 		15000,
 		xendit.QrisCurrencyIndonesiaRupiah,
 		expiresAt,
@@ -84,7 +84,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating invoice: %v", err)
 	}
-	fmt.Printf("Invoice created successfully! ID: %s, URL: %s\n", invoice.Id, invoice.InvoiceUrl)
+	fmt.Printf("Invoice created successfully! ID: %s, URL: %s\n", invoice.ID, invoice.InvoiceUrl)
 	fmt.Printf("Total Amount: Rp %.2f\n", invoice.Amount)
 	fmt.Printf("Status: %s\n", invoice.Status)
 
@@ -93,7 +93,7 @@ func main() {
 	fmt.Println("2.2. Checking invoice status...")
 	for {
 		time.Sleep(3 * time.Second)
-		updatedInvoice, err := client.GetInvoice(invoice.Id)
+		updatedInvoice, err := client.GetInvoice(invoice.ID)
 		if err != nil {
 			log.Fatalf("Error getting invoice: %v", err)
 		}
