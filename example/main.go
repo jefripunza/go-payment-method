@@ -21,7 +21,8 @@ func main() {
 	if xendit_dev_api_key == "" {
 		log.Println("Warning: XENDIT_DEV_API_KEY is empty. Please set it in your environment or a .env file.")
 	}
-	client := xendit.NewXendit(xendit_dev_api_key, "")
+	xendit_dev_callback_token := getEnv("XENDIT_DEV_CALLBACK_TOKEN", "dev_callback_token")
+	client := xendit.NewXendit(xendit_dev_api_key, xendit_dev_callback_token)
 
 	// ============================================================================
 	// First Balance

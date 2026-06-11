@@ -10,16 +10,22 @@ import (
 
 type Xendit struct {
 	Authorization string
+	CallbackToken string
 	ForUserId     string
 	BaseUrl       string
 }
 
-func NewXendit(apiKey string, forUserId string) *Xendit {
+func NewXendit(apiKey string, callbackToken string, defaultForUserId ...string) *Xendit {
 	auth := apiKey + ":"
 	authorization := base64.StdEncoding.EncodeToString([]byte(auth))
+	var fUserId string
+	if len(defaultForUserId) > 0 {
+		fUserId = defaultForUserId[0]
+	}
 	return &Xendit{
 		Authorization: authorization,
-		ForUserId:     forUserId,
+		CallbackToken: callbackToken,
+		ForUserId:     fUserId,
 		BaseUrl:       "https://api.xendit.co",
 	}
 }
