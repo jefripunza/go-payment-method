@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	fiber "github.com/gofiber/fiber/v2"
+	fiberV2 "github.com/gofiber/fiber/v2"
 	fiberV3 "github.com/gofiber/fiber/v3"
 	"github.com/labstack/echo/v4"
 	"github.com/valyala/fasthttp"
@@ -57,10 +57,10 @@ type CallbackDisbursementResponse struct {
 	EmailBcc                []string `json:"email_bcc"`
 }
 
-func (x *Xendit) CallbackInvoiceGofiberV2(c *fiber.Ctx) (*CallbackInvoiceResponse, error) {
+func (x *Xendit) CallbackInvoiceGofiberV2(c *fiberV2.Ctx) (*CallbackInvoiceResponse, error) {
 	callbackToken := c.Get("X-Callback-Token")
 	if callbackToken == "" || callbackToken != x.CallbackToken {
-		_ = c.Status(fiber.StatusUnauthorized).JSON(map[string]string{
+		_ = c.Status(fiberV2.StatusUnauthorized).JSON(map[string]string{
 			"error": "Invalid callback token",
 		})
 		return nil, fmt.Errorf("invalid callback token")
@@ -68,7 +68,7 @@ func (x *Xendit) CallbackInvoiceGofiberV2(c *fiber.Ctx) (*CallbackInvoiceRespons
 
 	var body CallbackInvoiceResponse
 	if err := c.BodyParser(&body); err != nil {
-		_ = c.Status(fiber.StatusBadRequest).JSON(map[string]string{
+		_ = c.Status(fiberV2.StatusBadRequest).JSON(map[string]string{
 			"error": err.Error(),
 		})
 		return nil, err
@@ -77,10 +77,10 @@ func (x *Xendit) CallbackInvoiceGofiberV2(c *fiber.Ctx) (*CallbackInvoiceRespons
 	return &body, nil
 }
 
-func (x *Xendit) CallbackDisbursementGofiberV2(c *fiber.Ctx) (*CallbackDisbursementResponse, error) {
+func (x *Xendit) CallbackDisbursementGofiberV2(c *fiberV2.Ctx) (*CallbackDisbursementResponse, error) {
 	callbackToken := c.Get("X-Callback-Token")
 	if callbackToken == "" || callbackToken != x.CallbackToken {
-		_ = c.Status(fiber.StatusUnauthorized).JSON(map[string]string{
+		_ = c.Status(fiberV2.StatusUnauthorized).JSON(map[string]string{
 			"error": "Invalid callback token",
 		})
 		return nil, fmt.Errorf("invalid callback token")
@@ -88,7 +88,7 @@ func (x *Xendit) CallbackDisbursementGofiberV2(c *fiber.Ctx) (*CallbackDisbursem
 
 	var body CallbackDisbursementResponse
 	if err := c.BodyParser(&body); err != nil {
-		_ = c.Status(fiber.StatusBadRequest).JSON(map[string]string{
+		_ = c.Status(fiberV2.StatusBadRequest).JSON(map[string]string{
 			"error": err.Error(),
 		})
 		return nil, err

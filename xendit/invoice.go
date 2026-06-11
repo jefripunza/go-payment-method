@@ -76,7 +76,7 @@ type InvoicePaylater struct {
 	PaylaterType string `json:"paylater_type"`
 }
 
-func (x *Xendit) InvoiceCreate(externalId string, name string, email string, items []InvoiceItem, paymentMethods []string, margin float64) (*InvoiceData, error) {
+func (x *Xendit) InvoiceCreate(externalId string, name string, email string, items []InvoiceItem, paymentMethods []string, margin float64, forUserId ...string) (*InvoiceData, error) {
 	url := fmt.Sprintf("%s/v2/invoices", x.BaseUrl)
 
 	amount := float64(0)
@@ -108,7 +108,7 @@ func (x *Xendit) InvoiceCreate(externalId string, name string, email string, ite
 		return nil, fmt.Errorf("error marshaling request: %v", err)
 	}
 
-	resp, _, err := x.doRequest("POST", url, "", "", payload)
+	resp, _, err := x.doRequest("POST", url, "", "", payload, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,10 +122,10 @@ func (x *Xendit) InvoiceCreate(externalId string, name string, email string, ite
 	return &result, nil
 }
 
-func (x *Xendit) GetInvoice(id string) (*InvoiceData, error) {
+func (x *Xendit) GetInvoice(id string, forUserId ...string) (*InvoiceData, error) {
 	url := fmt.Sprintf("%s/v2/invoices/%s", x.BaseUrl, id)
 
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return nil, err
 	}

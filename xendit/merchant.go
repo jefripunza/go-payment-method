@@ -76,7 +76,7 @@ type TransferResponse struct {
 
 // -------------------------------------------------------- //
 
-func (x *Xendit) MerchantCreate(email string, business_name string) (*MerchantResponse, error) {
+func (x *Xendit) MerchantCreate(email string, business_name string, forUserId ...string) (*MerchantResponse, error) {
 	url := fmt.Sprintf("%s/v2/accounts", x.BaseUrl)
 
 	payload := MerchantCreateRequest{
@@ -93,7 +93,7 @@ func (x *Xendit) MerchantCreate(email string, business_name string) (*MerchantRe
 		return nil, fmt.Errorf("error marshaling request: %v", err)
 	}
 
-	resp, _, err := x.doRequest("POST", url, "", "", payload_json)
+	resp, _, err := x.doRequest("POST", url, "", "", payload_json, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,10 +107,10 @@ func (x *Xendit) MerchantCreate(email string, business_name string) (*MerchantRe
 	return &result, nil
 }
 
-func (x *Xendit) MerchantList() ([]MerchantData, error) {
+func (x *Xendit) MerchantList(forUserId ...string) ([]MerchantData, error) {
 	url := fmt.Sprintf("%s/v2/accounts", x.BaseUrl)
 
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (x *Xendit) MerchantList() ([]MerchantData, error) {
 	return result.Data, nil
 }
 
-func (x *Xendit) MerchantUpdate(id string, email string, business_name string) (*MerchantResponse, error) {
+func (x *Xendit) MerchantUpdate(id string, email string, business_name string, forUserId ...string) (*MerchantResponse, error) {
 	url := fmt.Sprintf("%s/v2/accounts/%s", x.BaseUrl, id)
 
 	payload := MerchantUpdateRequest{
@@ -140,7 +140,7 @@ func (x *Xendit) MerchantUpdate(id string, email string, business_name string) (
 		return nil, fmt.Errorf("error marshaling request: %v", err)
 	}
 
-	resp, _, err := x.doRequest("PATCH", url, "", "", payload_json)
+	resp, _, err := x.doRequest("PATCH", url, "", "", payload_json, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -154,9 +154,9 @@ func (x *Xendit) MerchantUpdate(id string, email string, business_name string) (
 	return &result, nil
 }
 
-func (x *Xendit) GetAccountHolder(id string) (*AccountHolderResponse, error) {
+func (x *Xendit) GetAccountHolder(id string, forUserId ...string) (*AccountHolderResponse, error) {
 	url := fmt.Sprintf("%s/account_holders/%s", x.BaseUrl, id)
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -168,14 +168,14 @@ func (x *Xendit) GetAccountHolder(id string) (*AccountHolderResponse, error) {
 	return &result, nil
 }
 
-func (x *Xendit) AccountHolderUpdate(id string, req *UpdateAccountHolderRequest) (*AccountHolderResponse, error) {
+func (x *Xendit) AccountHolderUpdate(id string, req *UpdateAccountHolderRequest, forUserId ...string) (*AccountHolderResponse, error) {
 	url := fmt.Sprintf("%s/account_holders/%s", x.BaseUrl, id)
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, _, err := x.doRequest("PATCH", url, "", "", payload)
+	resp, _, err := x.doRequest("PATCH", url, "", "", payload, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,9 +187,9 @@ func (x *Xendit) AccountHolderUpdate(id string, req *UpdateAccountHolderRequest)
 	return &result, nil
 }
 
-func (x *Xendit) GetTransferByReference(reference string) (*TransferResponse, error) {
+func (x *Xendit) GetTransferByReference(reference string, forUserId ...string) (*TransferResponse, error) {
 	url := fmt.Sprintf("%s/transfers/reference=%s", x.BaseUrl, reference)
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return nil, err
 	}

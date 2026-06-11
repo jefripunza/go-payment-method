@@ -30,7 +30,7 @@ func NewXendit(apiKey string, callbackToken string, defaultForUserId ...string) 
 	}
 }
 
-func (x *Xendit) doRequest(method, url string, apiVersion string, businessId string, body []byte) ([]byte, int, error) {
+func (x *Xendit) doRequest(method, url string, apiVersion string, businessId string, body []byte, forUserId ...string) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		bodyReader = bytes.NewReader(body)
@@ -43,8 +43,12 @@ func (x *Xendit) doRequest(method, url string, apiVersion string, businessId str
 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", fmt.Sprintf("Basic %s", x.Authorization))
-	if x.ForUserId != "" {
-		httpReq.Header.Set("for-user-id", x.ForUserId)
+	fUserId := x.ForUserId
+	if len(forUserId) > 0 && forUserId[0] != "" {
+		fUserId = forUserId[0]
+	}
+	if fUserId != "" {
+		httpReq.Header.Set("for-user-id", fUserId)
 	}
 	if apiVersion != "" {
 		httpReq.Header.Set("api-version", apiVersion)

@@ -43,10 +43,10 @@ type TransactionData struct {
 	Fee                     TransactionFee `json:"fee"`
 }
 
-func (x *Xendit) GetTransaction() ([]TransactionData, error) {
+func (x *Xendit) GetTransaction(forUserId ...string) ([]TransactionData, error) {
 	url := fmt.Sprintf("%s/transactions", x.BaseUrl)
 
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return nil, err
 	}

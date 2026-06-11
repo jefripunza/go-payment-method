@@ -34,10 +34,10 @@ type DisbursementCreateResponse struct {
 	Status            string  `json:"status"`
 }
 
-func (x *Xendit) GetDisbursementBanks() ([]DisbursementBank, error) {
+func (x *Xendit) GetDisbursementBanks(forUserId ...string) ([]DisbursementBank, error) {
 	url := fmt.Sprintf("%s/available_disbursements_banks", x.BaseUrl)
 
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (x *Xendit) GetDisbursementBanks() ([]DisbursementBank, error) {
 	return banks, nil
 }
 
-func (x *Xendit) DisbursementCreate(bankCode string, bankHolderName string, bankAccountNumber string, amount float64, description string) (*DisbursementCreateResponse, error) {
+func (x *Xendit) DisbursementCreate(bankCode string, bankHolderName string, bankAccountNumber string, amount float64, description string, forUserId ...string) (*DisbursementCreateResponse, error) {
 	url := fmt.Sprintf("%s/disbursements", x.BaseUrl)
 
 	eid_code := strings.ReplaceAll(bankCode, "ID_", "")
@@ -73,7 +73,7 @@ func (x *Xendit) DisbursementCreate(bankCode string, bankHolderName string, bank
 		return nil, fmt.Errorf("error marshaling request: %v", err)
 	}
 
-	resp, _, err := x.doRequest("POST", url, "", "", req_json)
+	resp, _, err := x.doRequest("POST", url, "", "", req_json, forUserId...)
 	if err != nil {
 		return nil, err
 	}

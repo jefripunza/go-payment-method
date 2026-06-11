@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-func (x *Xendit) GetBalance() (float64, error) {
+func (x *Xendit) GetBalance(forUserId ...string) (float64, error) {
 	url := fmt.Sprintf("%s/balance", x.BaseUrl)
 
-	resp, _, err := x.doRequest("GET", url, "", "", nil)
+	resp, _, err := x.doRequest("GET", url, "", "", nil, forUserId...)
 	if err != nil {
 		return 0, err
 	}
