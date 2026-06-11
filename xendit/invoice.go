@@ -27,7 +27,7 @@ type InvoiceItem struct {
 }
 
 type InvoiceData struct {
-	Id                      string                `json:"id"`
+	ID                      string                `json:"id"`
 	ExternalId              string                `json:"external_id"`
 	UserId                  string                `json:"user_id"`
 	Status                  string                `json:"status"`
