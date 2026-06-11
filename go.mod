@@ -1,4 +1,4 @@
-module payment_method
+module github.com/jefripunza/go-payment-method
 
 go 1.25.6
 

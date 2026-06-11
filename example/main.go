@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"payment_method/xendit"
+	"github.com/jefripunza/go-payment-method/xendit"
 )
 
 func getEnv(key, defaultValue string) string {
