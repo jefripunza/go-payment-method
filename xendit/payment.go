@@ -5,6 +5,35 @@ import (
 	"fmt"
 )
 
+// Countries supported by Xendit Payment Requests
+const (
+	PaymentCountryIndonesia   = "ID"
+	PaymentCountryPhilippines = "PH"
+	PaymentCountryVietnam     = "VN"
+	PaymentCountryThailand    = "TH"
+	PaymentCountrySingapore   = "SG"
+	PaymentCountryMalaysia    = "MY"
+	PaymentCountryHongKong    = "HK"
+	PaymentCountryMexico      = "MX"
+)
+
+// Currencies supported by Xendit Payment Requests
+const (
+	PaymentCurrencyIndonesiaRupiah    = "IDR"
+	PaymentCurrencyPhilippinePeso     = "PHP"
+	PaymentCurrencyVietnamDong        = "VND"
+	PaymentCurrencyThaiBaht           = "THB"
+	PaymentCurrencySingaporeDollar    = "SGD"
+	PaymentCurrencyMalaysianRinggit   = "MYR"
+	PaymentCurrencyUnitedStatesDollar = "USD"
+	PaymentCurrencyHongKongDollar     = "HKD"
+	PaymentCurrencyAustralianDollar   = "AUD"
+	PaymentCurrencyPoundSterling      = "GBP"
+	PaymentCurrencyEuro               = "EUR"
+	PaymentCurrencyJapaneseYen        = "JPY"
+	PaymentCurrencyMexicanPeso        = "MXN"
+)
+
 // ==========================================
 // PAYMENT REQUEST MODELS
 // ==========================================

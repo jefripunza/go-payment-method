@@ -38,6 +38,30 @@ func main() {
 	// Make Transaction
 	// ============================================================================
 
+	// STEP 0: Create QRIS
+	// ============================================================================
+	fmt.Println("2.0. Creating QRIS...")
+	expiresAt := time.Now().Add(24 * time.Hour)
+	metadata := map[string]interface{}{
+		"order_id":     "order_12345",
+		"table_number": "10",
+	}
+	qris, err := client.QrisCreate(
+		"qris_ref_" + fmt.Sprintf("%d", time.Now().Unix()),
+		15000,
+		xendit.QrisCurrencyIndonesiaRupiah,
+		expiresAt,
+		"Test QRIS Payment - Table 10",
+		metadata,
+	)
+	if err != nil {
+		log.Fatalf("Error creating QRIS: %v", err)
+	}
+	fmt.Printf("QRIS created successfully! Payment Request ID: %s, Status: %s\n", qris.PaymentRequestId, qris.Status)
+	if len(qris.Actions) > 0 {
+		fmt.Printf("QRIS String/Value: %s\n", qris.Actions[0].Value)
+	}
+
 	// STEP 1: Create Invoice
 	// ============================================================================
 	fmt.Println("2.1. Creating invoice...")
