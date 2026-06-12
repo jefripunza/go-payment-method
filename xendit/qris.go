@@ -112,28 +112,42 @@ func (x *Xendit) QrisCreate(referenceId string, amount float64, currency string,
 
 // QrisCallbackResponse represents the webhook payload for payment.capture (QRIS)
 type QrisCallbackResponse struct {
-	Event      string           `json:"event"`
-	BusinessId string           `json:"business_id"`
 	Created    string           `json:"created"`
+	BusinessId string           `json:"business_id"`
+	Event      string           `json:"event"`
 	Data       QrisCallbackData `json:"data"`
+	ApiVersion string           `json:"api_version"`
 }
 
 type QrisCallbackData struct {
-	PaymentId         string            `json:"payment_id"`
-	BusinessId        string            `json:"business_id"`
-	Status            string            `json:"status"`
-	PaymentRequestId  string            `json:"payment_request_id"`
-	RequestAmount     float64           `json:"request_amount"`
-	CustomerId        string            `json:"customer_id"`
-	ChannelCode       string            `json:"channel_code"`
-	Country           string            `json:"country"`
-	Currency          string            `json:"currency"`
-	ReferenceId       string            `json:"reference_id"`
-	Description       string            `json:"description"`
-	ChannelProperties map[string]string `json:"channel_properties"`
-	Type              string            `json:"type"`
-	Created           string            `json:"created"`
-	Updated           string            `json:"updated"`
+	Type             string                 `json:"type"`
+	Status           string                 `json:"status"`
+	Country          string                 `json:"country"`
+	Created          string                 `json:"created"`
+	Updated          string                 `json:"updated"`
+	Captures         []QrisCallbackCapture  `json:"captures"`
+	Currency         string                 `json:"currency"`
+	Metadata         map[string]interface{} `json:"metadata"`
+	PaymentId        string                 `json:"payment_id"`
+	BusinessId        string                 `json:"business_id"`
+	ChannelCode      string                 `json:"channel_code"`
+	ReferenceId      string                 `json:"reference_id"`
+	CaptureMethod    string                 `json:"capture_method"`
+	RequestAmount    float64                `json:"request_amount"`
+	PaymentDetails   QrisPaymentDetails     `json:"payment_details"`
+	PaymentRequestId string                 `json:"payment_request_id"`
+}
+
+type QrisCallbackCapture struct {
+	CaptureId        string  `json:"capture_id"`
+	CaptureAmount    float64 `json:"capture_amount"`
+	CaptureTimestamp string  `json:"capture_timestamp"`
+}
+
+type QrisPaymentDetails struct {
+	PayerName  string `json:"payer_name"`
+	ReceiptId  string `json:"receipt_id"`
+	IssuerName string `json:"issuer_name"`
 }
 
 func (x *Xendit) QrisCallbackGofiberV2(c *fiberV2.Ctx) (*QrisCallbackResponse, error) {
