@@ -31,6 +31,10 @@ func NewXendit(apiKey string, callbackToken string, defaultForUserId ...string) 
 }
 
 func (x *Xendit) doRequest(method, url string, apiVersion string, businessId string, body []byte, forUserId ...string) ([]byte, int, error) {
+	return x.doRequestWithHeaders(method, url, apiVersion, businessId, nil, body, forUserId...)
+}
+
+func (x *Xendit) doRequestWithHeaders(method, url string, apiVersion string, businessId string, headers map[string]string, body []byte, forUserId ...string) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		bodyReader = bytes.NewReader(body)
@@ -55,6 +59,10 @@ func (x *Xendit) doRequest(method, url string, apiVersion string, businessId str
 	}
 	if businessId != "" {
 		httpReq.Header.Set("business-id", businessId)
+	}
+
+	for k, v := range headers {
+		httpReq.Header.Set(k, v)
 	}
 
 	resp, err := http.DefaultClient.Do(httpReq)
