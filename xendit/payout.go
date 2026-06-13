@@ -62,26 +62,30 @@ type PayoutChannelResponse struct {
 
 // PayoutCallbackResponse represents the webhook payload for payout callbacks
 type PayoutCallbackResponse struct {
-	Event      string             `json:"event"`
-	BusinessId string             `json:"business_id"`
 	Created    string             `json:"created"`
+	BusinessId string             `json:"business_id"`
+	Event      string             `json:"event"`
 	Data       PayoutCallbackData `json:"data"`
+	ApiVersion string             `json:"api_version"`
 }
 
 // PayoutCallbackData represents the data inside the payout callback
 type PayoutCallbackData struct {
-	Id                   string                  `json:"id"`
-	Amount               float64                 `json:"amount"`
-	ChannelCode          string                  `json:"channel_code"`
-	Currency             string                  `json:"currency"`
-	Status               string                  `json:"status"`
-	Description          string                  `json:"description"`
-	ReferenceId          string                  `json:"reference_id"`
-	Created              string                  `json:"created"`
-	Updated              string                  `json:"updated"`
-	EstimatedArrivalTime string                  `json:"estimated_arrival_time"`
-	BusinessId           string                  `json:"business_id"`
-	ChannelProperties    PayoutChannelProperties `json:"channel_properties"`
+	Id                   string  `json:"id"`
+	Amount               float64 `json:"amount"`
+	Status               string  `json:"status"`
+	Created              string  `json:"created"`
+	Updated              string  `json:"updated"`
+	Currency             string  `json:"currency"`
+	Description          string  `json:"description"`
+	ChannelCode          string  `json:"channel_code"`
+	ReferenceId          string  `json:"reference_id"`
+	AccountNumber        string  `json:"account_number"`
+	IdempotencyKey       string  `json:"idempotency_key"`
+	ChannelCategory      string  `json:"channel_category"`
+	AccountHolderName    string  `json:"account_holder_name"`
+	ConnectorReference   string  `json:"connector_reference"`
+	EstimatedArrivalTime string  `json:"estimated_arrival_time"`
 }
 
 // PayoutCreate creates a payout with the given parameters and Idempotency key
