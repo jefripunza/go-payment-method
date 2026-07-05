@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/joho/godotenv"
 )
 
@@ -10,4 +12,11 @@ func init() {
 	if err := godotenv.Load(".env"); err != nil {
 		_ = godotenv.Load("../.env")
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
