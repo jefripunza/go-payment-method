@@ -88,23 +88,37 @@ type CreateClosedTransactionRequest struct {
 	Signature     string      `json:"signature"`
 }
 
+type TransactionInstruction struct {
+	Title string   `json:"title"`
+	Steps []string `json:"steps"`
+}
+
 type ClosedTransactionData struct {
-	Reference         string      `json:"reference"`
-	MerchantRef       string      `json:"merchant_ref"`
-	PaymentName       string      `json:"payment_name"`
-	PaymentMethod     string      `json:"payment_method"`
-	PaymentMethodCode string      `json:"payment_method_code"`
-	TotalAmount       float64     `json:"total_amount"`
-	FeeMerchant       float64     `json:"fee_merchant"`
-	FeeCustomer       float64     `json:"fee_customer"`
-	TotalFee          float64     `json:"total_fee"`
-	AmountReceived    float64     `json:"amount_received"`
-	PayCode           string      `json:"pay_code"`
-	PayUrl            string      `json:"pay_url"`
-	CheckoutUrl       string      `json:"checkout_url"`
-	Status            string      `json:"status"`
-	ExpiredTime       int64       `json:"expired_time"`
-	OrderItems        []OrderItem `json:"order_items"`
+	Reference            string                   `json:"reference"`
+	MerchantRef          string                   `json:"merchant_ref"`
+	PaymentSelectionType string                   `json:"payment_selection_type,omitempty"`
+	PaymentName          string                   `json:"payment_name"`
+	PaymentMethod        string                   `json:"payment_method"`
+	PaymentMethodCode    string                   `json:"payment_method_code"`
+	CustomerName         string                   `json:"customer_name,omitempty"`
+	CustomerEmail        string                   `json:"customer_email,omitempty"`
+	CustomerPhone        string                   `json:"customer_phone,omitempty"`
+	CallbackUrl          string                   `json:"callback_url,omitempty"`
+	ReturnUrl            string                   `json:"return_url,omitempty"`
+	Amount               float64                  `json:"amount"`
+	TotalAmount          float64                  `json:"total_amount,omitempty"`
+	FeeMerchant          float64                  `json:"fee_merchant"`
+	FeeCustomer          float64                  `json:"fee_customer"`
+	TotalFee             float64                  `json:"total_fee"`
+	AmountReceived       float64                  `json:"amount_received"`
+	PayCode              string                   `json:"pay_code"`
+	PayUrl               string                   `json:"pay_url"`
+	CheckoutUrl          string                   `json:"checkout_url"`
+	Status               string                   `json:"status"`
+	PaidAt               int64                    `json:"paid_at,omitempty"`
+	ExpiredTime          int64                    `json:"expired_time"`
+	OrderItems           []OrderItem              `json:"order_items"`
+	Instructions         []TransactionInstruction `json:"instructions,omitempty"`
 }
 
 type CreateClosedTransactionResponse struct {
@@ -290,13 +304,13 @@ func (t *Tripay) CheckClosedTransactionStatus(reference string) (*ClosedTransact
 	}
 	if result.Data.Status == "" && result.Message != "" {
 		msgUpper := strings.ToUpper(result.Message)
-		if strings.Contains(msgUpper, "UNPAID") {
+		if strings.Contains(msgUpper, "BELUM DIBAYAR") || strings.Contains(msgUpper, "UNPAID") {
 			result.Data.Status = "UNPAID"
-		} else if strings.Contains(msgUpper, "PAID") {
+		} else if strings.Contains(msgUpper, "DIBAYAR") || strings.Contains(msgUpper, "PAID") {
 			result.Data.Status = "PAID"
-		} else if strings.Contains(msgUpper, "EXPIRED") {
+		} else if strings.Contains(msgUpper, "KADALUARSA") || strings.Contains(msgUpper, "EXPIRED") {
 			result.Data.Status = "EXPIRED"
-		} else if strings.Contains(msgUpper, "FAILED") {
+		} else if strings.Contains(msgUpper, "GAGAL") || strings.Contains(msgUpper, "FAILED") {
 			result.Data.Status = "FAILED"
 		}
 	}
