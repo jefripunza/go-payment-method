@@ -39,7 +39,7 @@ func TestCreateOpenPayment(t *testing.T) {
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/transaction/open-payment/create" {
+		if r.URL.Path != "/open-payment/create" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

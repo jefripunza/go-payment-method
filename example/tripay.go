@@ -8,14 +8,20 @@ import (
 )
 
 func Tripay() {
+	tripay_env := getEnv("TRIPAY_ENV", "")
 	tripay_api_key := getEnv("TRIPAY_API_KEY", "")
 	tripay_private_key := getEnv("TRIPAY_PRIVATE_KEY", "")
 
-	if tripay_api_key == "" || tripay_private_key == "" {
-		log.Println("Warning: TRIPAY_API_KEY or TRIPAY_PRIVATE_KEY is empty. Please set them in your environment or a .env file.")
+	if tripay_env == "" || tripay_api_key == "" || tripay_private_key == "" {
+		log.Println("Warning: TRIPAY_ENV or TRIPAY_API_KEY or TRIPAY_PRIVATE_KEY is empty. Please set them in your environment or a .env file.")
 	}
 
-	client := tripay.NewTripay(false, tripay_api_key, tripay_private_key)
+	isProduction := false
+	if tripay_env == "production" {
+		isProduction = true
+	}
+
+	client := tripay.NewTripay(isProduction, tripay_api_key, tripay_private_key)
 
 	// 1. Get Payment Instruction
 	fmt.Println("1. Retrieving payment instructions for BRI Virtual Account...")

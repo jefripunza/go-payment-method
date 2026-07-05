@@ -76,7 +76,7 @@ func (t *Tripay) CreateOpenPayment(req CreateOpenPaymentRequest) (*CreateOpenPay
 		return nil, fmt.Errorf("error marshaling request: %v", err)
 	}
 
-	respBody, _, err := t.doRequest(http.MethodPost, t.BaseUrl+"/transaction/open-payment/create", reqBody)
+	respBody, _, err := t.doRequest(http.MethodPost, t.BaseUrl+"/open-payment/create", reqBody)
 	if err != nil {
 		return nil, err
 	}

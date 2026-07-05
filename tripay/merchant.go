@@ -8,18 +8,23 @@ import (
 	"strconv"
 )
 
+type ChannelFee struct {
+	Flat    float64     `json:"flat"`
+	Percent interface{} `json:"percent"`
+}
+
 type PaymentChannel struct {
-	Group         string  `json:"group"`
-	Code          string  `json:"code"`
-	Name          string  `json:"name"`
-	Type          string  `json:"type"`
-	FeeMerchant   float64 `json:"fee_merchant"`
-	FeeCustomer   float64 `json:"fee_customer"`
-	TotalFee      float64 `json:"total_fee"`
-	MinimumAmount float64 `json:"minimum_amount"`
-	MaximumAmount float64 `json:"maximum_amount"`
-	IconUrl       string  `json:"icon_url"`
-	Active        bool    `json:"active"`
+	Group         string      `json:"group"`
+	Code          string      `json:"code"`
+	Name          string      `json:"name"`
+	Type          string      `json:"type"`
+	FeeMerchant   ChannelFee  `json:"fee_merchant"`
+	FeeCustomer   ChannelFee  `json:"fee_customer"`
+	TotalFee      interface{} `json:"total_fee"`
+	MinimumAmount float64     `json:"minimum_amount"`
+	MaximumAmount float64     `json:"maximum_amount"`
+	IconUrl       string      `json:"icon_url"`
+	Active        bool        `json:"active"`
 }
 
 type MerchantPaymentChannelsResponse struct {
