@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jefripunza/go-payment-method/tripay"
 )
@@ -106,6 +107,71 @@ func Tripay() {
 			log.Printf("Error getting open payment transactions: %v\n", err)
 		} else {
 			fmt.Printf("Success: %t, Payments Count: %d\n", opTxs.Success, len(opTxs.Data))
+		}
+	}
+
+	// ============================================================================
+	// Closed Payment Testing
+	// ============================================================================
+	merchantCode = getEnv("TRIPAY_MERCHANT_CODE", "T0001")
+	closedMerchantRef := fmt.Sprintf("INV-CL-%d", 12345) // using a simple static or Unix timestamp ref
+	closedAmount := 50000
+
+	// 9. Generate Closed Payment Signature
+	closedSignature := client.CreateClosedTransactionSignature(merchantCode, closedMerchantRef, closedAmount)
+	fmt.Printf("\n9. Generated Closed Payment Signature: %s\n", closedSignature)
+
+	// 10. Create Closed Transaction
+	fmt.Println("\n10. Creating Closed Payment Transaction...")
+	closedTx, err := client.CreateClosedTransaction(tripay.CreateClosedTransactionRequest{
+		Method:        tripay.ChannelBriVA,
+		MerchantRef:   closedMerchantRef,
+		Amount:        closedAmount,
+		CustomerName:  "John Doe",
+		CustomerEmail: "johndoe@example.com",
+		CustomerPhone: "081234567890",
+		OrderItems: []tripay.OrderItem{
+			{
+				Sku:      "ITEM01",
+				Name:     "Product Test",
+				Price:    closedAmount,
+				Quantity: 1,
+			},
+		},
+		Signature: closedSignature,
+	})
+	if err != nil {
+		log.Printf("Error creating closed transaction: %v\n", err)
+	} else {
+		fmt.Printf("Success: %t, Reference: %s, Pay Code: %s, Status: %s\n", closedTx.Success, closedTx.Data.Reference, closedTx.Data.PayCode, closedTx.Data.Status)
+		ref := closedTx.Data.Reference
+		checkoutUrl := closedTx.Data.CheckoutUrl
+		fmt.Printf("Checkout URL: %s\n", checkoutUrl)
+
+		// 11. Get Closed Transaction Detail (Poll until PAID)
+		fmt.Println("\n11. Getting Closed Transaction Detail...")
+		fmt.Printf("Please pay using the Pay Code: %s or simulate payment in the TriPay Sandbox simulator to complete this test.\n", closedTx.Data.PayCode)
+		for {
+			txDetail, err := client.GetClosedTransactionDetail(ref)
+			if err != nil {
+				log.Printf("Error getting closed transaction detail: %v\n", err)
+			} else {
+				// fmt.Printf("Current Status: %s, Pay Code: %s\n", txDetail.Data.Status, txDetail.Data.PayCode)
+				if txDetail.Data.Status == "PAID" {
+					fmt.Println("Payment successfully completed!")
+					break
+				}
+			}
+			time.Sleep(3 * time.Second)
+		}
+
+		// 12. Check Closed Transaction Status
+		fmt.Println("\n12. Checking Closed Transaction Status...")
+		txStatus, err := client.CheckClosedTransactionStatus(ref)
+		if err != nil {
+			log.Printf("Error checking closed transaction status: %v\n", err)
+		} else {
+			fmt.Printf("Success: %t, Reference: %s, Status: %s\n", txStatus.Success, txStatus.Data.Reference, txStatus.Data.Status)
 		}
 	}
 }

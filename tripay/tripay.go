@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+const debug = true
+
 type Tripay struct {
 	ApiKey     string
 	PrivateKey string

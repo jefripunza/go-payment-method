@@ -162,3 +162,152 @@ func TestGetOpenPaymentTransactions(t *testing.T) {
 		t.Errorf("Expected transaction reference 'T12345-01', got: %+v", resp.Data)
 	}
 }
+
+func TestCreateClosedTransactionSignature(t *testing.T) {
+	client := NewTripay(false, "api_key", "my_private_key")
+	sig := client.CreateClosedTransactionSignature("T0001", "INV55567", 1500000)
+	if sig == "" {
+		t.Error("Expected signature not to be empty")
+	}
+}
+
+func TestCreateClosedTransaction(t *testing.T) {
+	mockResponse := CreateClosedTransactionResponse{
+		Success: true,
+		Message: "success",
+		Data: ClosedTransactionData{
+			Reference:   "T12345",
+			MerchantRef: "INV-01",
+			TotalAmount: 50000,
+			PayCode:     "888123456",
+			Status:      "UNPAID",
+		},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/transaction/create" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(mockResponse)
+	}))
+	defer server.Close()
+
+	client := NewTripay(false, "api_key", "priv_key")
+	client.BaseUrl = server.URL
+
+	resp, err := client.CreateClosedTransaction(CreateClosedTransactionRequest{
+		Method:       "BRIVA",
+		MerchantRef:  "INV-01",
+		Amount:       50000,
+		CustomerName: "John Doe",
+	})
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if !resp.Success {
+		t.Errorf("Expected success to be true")
+	}
+
+	if resp.Data.Reference != "T12345" || resp.Data.PayCode != "888123456" {
+		t.Errorf("Expected reference 'T12345' and paycode '888123456', got: %+v", resp.Data)
+	}
+}
+
+func TestGetClosedTransactionDetail(t *testing.T) {
+	ref := "T12345"
+	mockResponse := ClosedTransactionDetailResponse{
+		Success: true,
+		Message: "success",
+		Data: ClosedTransactionData{
+			Reference:   ref,
+			MerchantRef: "INV-01",
+			TotalAmount: 50000,
+			PayCode:     "888123456",
+			Status:      "PAID",
+		},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/transaction/detail" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.URL.Query().Get("reference") != ref {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(mockResponse)
+	}))
+	defer server.Close()
+
+	client := NewTripay(false, "api_key", "priv_key")
+	client.BaseUrl = server.URL
+
+	resp, err := client.GetClosedTransactionDetail(ref)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if !resp.Success {
+		t.Errorf("Expected success to be true")
+	}
+
+	if resp.Data.Reference != ref {
+		t.Errorf("Expected reference %s, got: %s", ref, resp.Data.Reference)
+	}
+}
+
+func TestCheckClosedTransactionStatus(t *testing.T) {
+	ref := "T12345"
+	mockResponse := ClosedTransactionStatusResponse{
+		Success: true,
+		Message: "success",
+		Data: ClosedTransactionStatusData{
+			Reference:   ref,
+			MerchantRef: "INV-01",
+			Status:      "PAID",
+		},
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/transaction/check-status" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.URL.Query().Get("reference") != ref {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(mockResponse)
+	}))
+	defer server.Close()
+
+	client := NewTripay(false, "api_key", "priv_key")
+	client.BaseUrl = server.URL
+
+	resp, err := client.CheckClosedTransactionStatus(ref)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if !resp.Success {
+		t.Errorf("Expected success to be true")
+	}
+
+	if resp.Data.Reference != ref || resp.Data.Status != "PAID" {
+		t.Errorf("Expected reference %s and status PAID, got: %+v", ref, resp.Data)
+	}
+}
+

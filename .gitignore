@@ -2,3 +2,5 @@
 .env.production
 
 /example_bin
+/*.json
+/**/*.json
