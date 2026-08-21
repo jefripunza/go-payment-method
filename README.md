@@ -245,6 +245,62 @@ bal, _ := x.GetBalance() // saldo CASH dalam IDR
 
 Lihat `example/` untuk contoh lengkap.
 
+## Stripe
+
+```go
+import "github.com/jefripunza/go-payment-method/stripe"
+
+// Test vs live ditentukan API key (sk_test_... vs sk_live_...) — bukan URL.
+sc := stripe.NewClient("sk_test_xxx")
+```
+
+### PaymentIntent (model modern, 2-step)
+```go
+// 1. Buat PaymentIntent → client_secret untuk frontend
+pi, _ := sc.CreatePaymentIntent(stripe.PaymentIntentParams{
+    Amount:   100000,              // minor units (IDR 100.000 = 100000)
+    Currency: "idr",
+    PaymentMethodType: "card",     // card | gopay | dana | qris | ...
+    CaptureMethod: "AUTOMATIC",    // atau MANUAL (pre-auth)
+}, "idem-key-1")
+// kirim pi.ClientSecret ke frontend (Payment Element / Stripe.js)
+
+// 2. Konfirmasi di backend (opsional, pakai payment method tersimpan)
+confirmed, _ := sc.ConfirmPaymentIntent(pi.ID, nil)
+
+// 3. Capture manual (untuk MANUAL / pre-auth)
+captured, _ := sc.CapturePaymentIntent(pi.ID, 100000)
+```
+
+### Webhook verifikasi (HMAC-SHA256 signed payload)
+```go
+ok, err := sc.VerifyWebhookSignature(rawBody, stripeSignatureHeader, "whsec_xxx", 300)
+// rawBody = body mentah request (bukan yang sudah di-parse)
+```
+
+### Checkout Session (hosted page)
+```go
+sess, _ := sc.CreateCheckoutSession("payment",
+    "https://anda.com/sukses", "https://anda.com/batal",
+    []stripe.CheckoutItem{{PriceID: "price_xxx", Quantity: 1}},
+    "customer@example.com", "",
+)
+// arahkan user ke sess.URL
+```
+
+### Subscription
+```go
+sub, _ := sc.CreateSubscription("cus_xxx", "price_xxx", 1, "")
+```
+
+### Payout (money-out) & Balance
+```go
+payout, _ := sc.CreatePayout(500000, "idr", "ba_xxx", "")
+bal, _ := sc.GetBalance() // available / pending
+```
+
+Lihat `example/` untuk contoh lengkap.
+
 ## Test
 
 ```bash
