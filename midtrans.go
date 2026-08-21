@@ -2,7 +2,7 @@ package payment_method
 
 import (
 	"bytes"
-	"crypto/md5"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,27 +24,46 @@ type Midtrans struct {
 	IsProduction bool
 	// HTTPClient optionally overrides the default *http.Client (useful for tests / proxy).
 	HTTPClient *http.Client
-	baseURL    string
+	snapURL    string
+	coreURL    string
 }
 
 const (
-	midtransSandboxURL = "https://app.sandbox.midtrans.com"
-	midtransProdURL    = "https://app.midtrans.com"
+	midtransSandboxSnapURL = "https://app.sandbox.midtrans.com"
+	midtransProdSnapURL    = "https://app.midtrans.com"
+	midtransSandboxCoreURL = "https://api.sandbox.midtrans.com"
+	midtransProdCoreURL    = "https://api.midtrans.com"
 )
 
 // NewMidtrans creates a Midtrans client. isProduction menentukan env (sandbox vs production).
+// Snap memakai host app.*, sedangkan Core API / IRIS / Payment Link / Subscription
+// memakai host api.* (sesuai openapi resmi).
 func NewMidtrans(serverKey, clientKey string, isProduction bool) *Midtrans {
-	baseURL := midtransSandboxURL
+	snapURL := midtransSandboxSnapURL
+	coreURL := midtransSandboxCoreURL
 	if isProduction {
-		baseURL = midtransProdURL
+		snapURL = midtransProdSnapURL
+		coreURL = midtransProdCoreURL
 	}
 	return &Midtrans{
 		ServerKey:    serverKey,
 		ClientKey:    clientKey,
 		IsProduction: isProduction,
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
-		baseURL:      baseURL,
+		snapURL:      snapURL,
+		coreURL:      coreURL,
 	}
+}
+
+// resolveBaseURL memilih host sesuai prefix path.
+func (m *Midtrans) resolveBaseURL(path string) string {
+	// Snap transactions dilayani host app.* (khusus pembuatan token).
+	if strings.HasPrefix(path, "/snap/") {
+		return m.snapURL
+	}
+	// Semua path lain (Core API, IRIS, Payment Link, Subscription, tokenization)
+	// dilayani host api.*.
+	return m.coreURL
 }
 
 // --- low-level helpers ---
@@ -51,6 +71,17 @@ func NewMidtrans(serverKey, clientKey string, isProduction bool) *Midtrans {
 // doRequest performs an HTTP request against the Midtrans API.
 // It sets Authorization using Basic auth with the Server Key (as required by Midtrans).
 func (m *Midtrans) doRequest(method, path string, body interface{}, contentType string) ([]byte, int, error) {
+	return m.doRequestWithAuth(method, path, body, contentType, true)
+}
+
+// doRequestNoAuth performs an HTTP request tanpa Basic Auth — dipakai endpoint
+// frontend (card token) yang hanya memakai client_key sebagai query param.
+func (m *Midtrans) doRequestNoAuth(method, path string, body interface{}, contentType string) ([]byte, int, error) {
+	return m.doRequestWithAuth(method, path, body, contentType, false)
+}
+
+// doRequestWithAuth adalah inti request; useAuth=false menghilangkan header Basic.
+func (m *Midtrans) doRequestWithAuth(method, path string, body interface{}, contentType string, useAuth bool) ([]byte, int, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		var buf bytes.Buffer
@@ -67,7 +98,7 @@ func (m *Midtrans) doRequest(method, path string, body interface{}, contentType 
 		bodyReader = &buf
 	}
 
-	u := m.baseURL + path
+	u := m.resolveBaseURL(path) + path
 
 	req, err := http.NewRequest(method, u, bodyReader)
 	if err != nil {
@@ -79,7 +110,9 @@ func (m *Midtrans) doRequest(method, path string, body interface{}, contentType 
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(m.ServerKey+":")))
+	if useAuth {
+		req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(m.ServerKey+":")))
+	}
 
 	client := m.HTTPClient
 	if client == nil {
@@ -836,25 +869,53 @@ func (m *Midtrans) subscriptionAction(path string) (map[string]interface{}, erro
 }
 
 // ===========================================================================
-// CARD TOKENIZATION API — /v2/token & /v2/card/register
+// CARD TOKENIZATION API — /v2/token & /v2/card/register (frontend / client-side)
 // ===========================================================================
 
-// GetCardToken gets a card token by pointing to a 3DS/card details endpoint.
-// Kembalikan raw response; pakai untuk membuat token kartu sebelum charge.
-func (m *Midtrans) GetCardToken(tokenID string, params map[string]string) (map[string]interface{}, error) {
+// GetCardTokenRequest adalah param untuk mengambil card token dari FRONTEND.
+// Dipanggil tanpa Basic Auth — cukup query param client_key (Client Key).
+type GetCardTokenRequest struct {
+	ClientKey    string // Client Key (publik). Fallback ke m.ClientKey jika kosong.
+	CardNumber   string
+	CardExpMonth string // MM
+	CardExpYear  string // YYYY
+	CardCVV      string
+	GrossAmount  int    // opsional
+	Currency     string // opsional, default IDR
+	Secure       bool   // opsional: true = hasilkan token untuk 3DS (1-click)
+}
+
+// GetCardToken mengambil token_id kartu dari browser (GET /v2/token).
+// Endpoint frontend — TIDAK pakai Basic Auth, hanya Client Key.
+func (m *Midtrans) GetCardToken(req GetCardTokenRequest) (map[string]interface{}, error) {
 	q := url.Values{}
-	q.Set("token_id", tokenID)
-	if params != nil {
-		for k, v := range params {
-			q.Set(k, v)
-		}
+	clientKey := req.ClientKey
+	if clientKey == "" {
+		clientKey = m.ClientKey
 	}
-	respBody, status, err := m.doRequest(http.MethodGet, "/v2/token?"+q.Encode(), nil, "")
+	q.Set("client_key", clientKey)
+	q.Set("card_number", req.CardNumber)
+	q.Set("card_exp_month", req.CardExpMonth)
+	q.Set("card_exp_year", req.CardExpYear)
+	if req.CardCVV != "" {
+		q.Set("card_cvv", req.CardCVV)
+	}
+	if req.GrossAmount > 0 {
+		q.Set("gross_amount", strconv.Itoa(req.GrossAmount))
+	}
+	if req.Currency != "" {
+		q.Set("currency", req.Currency)
+	}
+	if req.Secure {
+		q.Set("secure", "true")
+	}
+
+	respBody, status, err := m.doRequestNoAuth(http.MethodGet, "/v2/token?"+q.Encode(), nil, "")
 	if err != nil {
 		return nil, err
 	}
 	if status >= 400 {
-		return nil, m.apiError(respBody, status)
+		return nil, m.apiErrorNoAuth(respBody, status)
 	}
 	var resp map[string]interface{}
 	if err := json.Unmarshal(respBody, &resp); err != nil {
@@ -863,22 +924,37 @@ func (m *Midtrans) GetCardToken(tokenID string, params map[string]string) (map[s
 	return resp, nil
 }
 
-// RegisterCardToken registers a card token (GET /v2/card/register).
-func (m *Midtrans) RegisterCardToken(cardNumber string, expiryMonth, expiryYear int, clientKey string) (map[string]interface{}, error) {
+// RegisterCardRequest adalah param untuk mendaftarkan card token (1-click/two-clicks).
+type RegisterCardRequest struct {
+	ClientKey    string // Client Key. Fallback ke m.ClientKey jika kosong.
+	CardNumber   string
+	CardExpMonth string // MM
+	CardExpYear  string // YYYY
+	CardCVV      string
+}
+
+// RegisterCardToken mendaftarkan kartu untuk pembayaran berulang (GET /v2/card/register).
+// Endpoint frontend — TIDAK pakai Basic Auth, hanya Client Key.
+func (m *Midtrans) RegisterCardToken(req RegisterCardRequest) (map[string]interface{}, error) {
 	q := url.Values{}
-	q.Set("card_number", cardNumber)
-	q.Set("expiry_month", strconv.Itoa(expiryMonth))
-	q.Set("expiry_year", strconv.Itoa(expiryYear))
+	clientKey := req.ClientKey
 	if clientKey == "" {
 		clientKey = m.ClientKey
 	}
 	q.Set("client_key", clientKey)
-	respBody, status, err := m.doRequest(http.MethodGet, "/v2/card/register?"+q.Encode(), nil, "")
+	q.Set("card_number", req.CardNumber)
+	q.Set("card_exp_month", req.CardExpMonth)
+	q.Set("card_exp_year", req.CardExpYear)
+	if req.CardCVV != "" {
+		q.Set("card_cvv", req.CardCVV)
+	}
+
+	respBody, status, err := m.doRequestNoAuth(http.MethodGet, "/v2/card/register?"+q.Encode(), nil, "")
 	if err != nil {
 		return nil, err
 	}
 	if status >= 400 {
-		return nil, m.apiError(respBody, status)
+		return nil, m.apiErrorNoAuth(respBody, status)
 	}
 	var resp map[string]interface{}
 	if err := json.Unmarshal(respBody, &resp); err != nil {
@@ -950,14 +1026,16 @@ func (m *Midtrans) apiError(body []byte, status int) error {
 	return fmt.Errorf("midtrans API error (status: %d): %s", status, msg)
 }
 
-// VerifyNotificationSignature menghitung signature_key untuk verifikasi notifikasi (Core API webhook).
-// Pakai: md5(orderID + statusCode + grossAmount + m.ServerKey).
-func (m *Midtrans) VerifyNotificationSignature(signatureKey, orderID, statusCode, grossAmount string) bool {
-	expected := md5sum(orderID + statusCode + grossAmount + m.ServerKey)
-	return expected == signatureKey
+// apiErrorNoAuth sama seperti apiError, untuk endpoint frontend (tanpa auth).
+func (m *Midtrans) apiErrorNoAuth(body []byte, status int) error {
+	return m.apiError(body, status)
 }
 
-func md5sum(s string) string {
-	sum := md5.Sum([]byte(s))
-	return hex.EncodeToString(sum[:])
+// VerifyNotificationSignature memverifikasi signature_key webhook Midtrans.
+// Sesuai openapi: SHA512(orderId + statusCode + grossAmount + ServerKey).
+func (m *Midtrans) VerifyNotificationSignature(signatureKey, orderID, statusCode, grossAmount string) bool {
+	h := sha512.New()
+	h.Write([]byte(orderID + statusCode + grossAmount + m.ServerKey))
+	expected := hex.EncodeToString(h.Sum(nil))
+	return expected == signatureKey
 }

@@ -53,10 +53,15 @@ fees, _ := t.CalculateMerchantFees("BRIVA", 10000)
 txs, _ := t.GetMerchantTransactions(tripay.MerchantTransactionsFilter{})
 instr, _ := t.GetPaymentInstruction(tripay.PaymentInstructionRequest{Code: "BRIVA"})
 
-// E-Wallet (OVO/DANA)
-linkResp, _ := t.LinkEWallet(tripay.EWalletLinkRequest{CustomerName: "Budi", CustomerPhone: "08123456789"})
-detailEwallet, _ := t.GetEWalletDetail(reference)
-unlinkResp, _ := t.UnlinkEWallet(reference)
+// E-Wallet (DANA)
+sigEwallet := t.CreateEWalletSignature("T0001", tripay.EWalletWalletType, "08123456789")
+linkResp, _ := t.LinkEWallet(tripay.EWalletLinkRequest{
+    WalletType: tripay.EWalletWalletType, MobilePhone: "08123456789", Signature: sigEwallet,
+})
+detailEwallet, _ := t.GetEWalletDetail(tripay.EWalletWalletType, "08123456789")
+unlinkResp, _ := t.UnlinkEWallet(tripay.EWalletUnlinkRequest{
+    WalletType: tripay.EWalletWalletType, MobilePhone: "08123456789", Signature: sigEwallet,
+})
 ```
 
 ### Callback
@@ -144,7 +149,15 @@ cancelled, _ := m.CancelSubscription("sub-id")
 
 ### Card & GoPay Tokenization
 ```go
-cardToken, _ := m.RegisterCardToken("4811111111111114", 12, 2025, "")
+// Card token (frontend) — TANPA Basic Auth, hanya Client Key
+cardToken, _ := m.GetCardToken(pm.GetCardTokenRequest{
+    ClientKey: clientKey, CardNumber: "4811111111111114",
+    CardExpMonth: "12", CardExpYear: "2025", CardCVV: "123",
+})
+registered, _ := m.RegisterCardToken(pm.RegisterCardRequest{
+    ClientKey: clientKey, CardNumber: "4811111111111114",
+    CardExpMonth: "12", CardExpYear: "2025", CardCVV: "123",
+})
 gopayToken, _ := m.CreateGoPayAccountToken(pm.CreateGoPayTokenRequest{
     PaymentType: "gopay", Gopay: map[string]interface{}{"enable_callback": true},
 })

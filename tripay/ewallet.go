@@ -1,61 +1,75 @@
 package tripay
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strings"
 )
 
-// EWalletLinkRequest defines the request for linking an e-wallet (OVO/DANA) account
-// to the merchant (tripay.co.id/developer E-Wallet Link API).
+// EWalletWalletType adalah jenis e-wallet yang didukung untuk link/unlink/detail.
+// Saat ini hanya DANA yang tersedia.
+const EWalletWalletType = "DANA"
+
+// EWalletLinkRequest mendefinisikan request untuk menautkan akun e-wallet
+// ke merchant (POST /ewallet/link). Sesuai openapi: wallet_type, mobile_phone, signature.
 type EWalletLinkRequest struct {
-	CustomerName  string `json:"customer_name"`
-	CustomerPhone string `json:"customer_phone"`
-	CallbackURL   string `json:"callback_url,omitempty"`
+	WalletType  string `json:"wallet_type"`
+	MobilePhone string `json:"mobile_phone"`
+	// Signature diisi hasil CreateEWalletSignature(merchantCode, walletType, mobilePhone).
+	// WAJIB pada mode production.
+	Signature string `json:"signature,omitempty"`
 }
 
-// EWalletLinkResponse is the response from linking an e-wallet account.
+// EWalletLinkResponse adalah response dari menautkan akun e-wallet.
 type EWalletLinkResponse struct {
-	Success bool             `json:"success"`
-	Message string           `json:"message"`
-	Data    *EWalletLinkData `json:"data,omitempty"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
-// EWalletLinkData holds the linked e-wallet account details.
-type EWalletLinkData struct {
-	Reference     string `json:"reference"`
-	CustomerName  string `json:"customer_name"`
-	CustomerPhone string `json:"customer_phone"`
-	Status        string `json:"status"`
+// EWalletUnlinkRequest mendefinisikan request untuk memutus akun e-wallet
+// (POST /ewallet/unlink). Sesuai openapi: wallet_type, mobile_phone, signature.
+type EWalletUnlinkRequest struct {
+	WalletType  string `json:"wallet_type"`
+	MobilePhone string `json:"mobile_phone"`
+	// Signature wajib pada mode production.
+	Signature string `json:"signature,omitempty"`
 }
 
-// EWalletUnlinkResponse is the response from unlinking an e-wallet account.
+// EWalletUnlinkResponse adalah response dari memutus akun e-wallet.
 type EWalletUnlinkResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
-// EWalletDetailResponse is the response from fetching an e-wallet account detail.
+// EWalletDetailResponse adalah response dari mengambil info akun e-wallet
+// (GET /ewallet/detail). Termasuk saldo.
 type EWalletDetailResponse struct {
 	Success bool               `json:"success"`
-	Message string             `json:"message"`
+	Message string             `json:"message,omitempty"`
 	Data    *EWalletDetailData `json:"data,omitempty"`
 }
 
-// EWalletDetailData holds details of a linked e-wallet account.
+// EWalletDetailData memuat informasi akun e-wallet yang terhubung.
 type EWalletDetailData struct {
-	Reference     string `json:"reference"`
-	Status        string `json:"status"`
-	MerchantRef   string `json:"merchant_ref"`
-	CustomerName  string `json:"customer_name"`
-	CustomerPhone string `json:"customer_phone"`
-	EwalletType   string `json:"ewallet_type"`
-	Note          string `json:"note"`
+	WalletType  string `json:"wallet_type,omitempty"`
+	MobilePhone string `json:"mobile_phone,omitempty"`
+	Balance     string `json:"balance,omitempty"`
+	Currency    string `json:"currency,omitempty"`
 }
 
-// LinkEWallet links an e-wallet (OVO/DANA) account to the merchant.
-// Requires the customer phone number tied to the e-wallet.
+// CreateEWalletSignature menghasilkan HMAC-SHA256 untuk operasi e-wallet.
+// Format: HMAC-SHA256(privateKey, merchantCode + walletType + mobilePhone).
+func (t *Tripay) CreateEWalletSignature(merchantCode, walletType, mobilePhone string) string {
+	h := hmac.New(sha256.New, []byte(t.PrivateKey))
+	h.Write([]byte(merchantCode + walletType + mobilePhone))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// LinkEWallet menautkan akun e-wallet (DANA) ke merchant (POST /ewallet/link).
+// Production wajib menyertakan Signature; sandbox biasanya tidak wajib.
 func (t *Tripay) LinkEWallet(req EWalletLinkRequest) (*EWalletLinkResponse, error) {
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -72,9 +86,10 @@ func (t *Tripay) LinkEWallet(req EWalletLinkRequest) (*EWalletLinkResponse, erro
 	return &resp, nil
 }
 
-// UnlinkEWallet unlinks an e-wallet account from the merchant by its reference.
-func (t *Tripay) UnlinkEWallet(reference string) (*EWalletUnlinkResponse, error) {
-	body, err := json.Marshal(map[string]string{"reference": reference})
+// UnlinkEWallet memutus akun e-wallet yang sudah ditautkan (POST /ewallet/unlink).
+// Production wajib menyertakan Signature.
+func (t *Tripay) UnlinkEWallet(req EWalletUnlinkRequest) (*EWalletUnlinkResponse, error) {
+	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
@@ -89,18 +104,19 @@ func (t *Tripay) UnlinkEWallet(reference string) (*EWalletUnlinkResponse, error)
 	return &resp, nil
 }
 
-// GetEWalletDetail retrieves the status/detail of a linked e-wallet account by reference.
-func (t *Tripay) GetEWalletDetail(reference string) (*EWalletDetailResponse, error) {
-	u := t.BaseUrl + "/ewallet/detail"
-	params := url.Values{}
-	params.Set("reference", reference)
-	qs := params.Encode()
-	if strings.Contains(u, "?") {
-		u += "&" + qs
-	} else {
-		u += "?" + qs
+// GetEWalletDetail mengambil informasi akun e-wallet yang terhubung (termasuk saldo),
+// berdasarkan wallet_type dan mobile_phone (GET /ewallet/detail). Production saja.
+func (t *Tripay) GetEWalletDetail(walletType, mobilePhone string) (*EWalletDetailResponse, error) {
+	u, err := url.Parse(t.BaseUrl + "/ewallet/detail")
+	if err != nil {
+		return nil, err
 	}
-	respBody, _, err := t.doRequest(http.MethodGet, u, nil)
+	q := u.Query()
+	q.Set("wallet_type", walletType)
+	q.Set("mobile_phone", mobilePhone)
+	u.RawQuery = q.Encode()
+
+	respBody, _, err := t.doRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
