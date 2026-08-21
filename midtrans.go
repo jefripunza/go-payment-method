@@ -38,7 +38,7 @@ const (
 // NewMidtrans creates a Midtrans client. isProduction menentukan env (sandbox vs production).
 // Snap memakai host app.*, sedangkan Core API / IRIS / Payment Link / Subscription
 // memakai host api.* (sesuai openapi resmi).
-func NewMidtrans(serverKey, clientKey string, isProduction bool) *Midtrans {
+func NewMidtrans(isProduction bool, serverKey, clientKey string) *Midtrans {
 	snapURL := midtransSandboxSnapURL
 	coreURL := midtransSandboxCoreURL
 	if isProduction {

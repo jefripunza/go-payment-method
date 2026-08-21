@@ -79,7 +79,7 @@ ok := t.VerifySignature(rawBody, receivedSignature)
 ```go
 import pm "github.com/jefripunza/go-payment-method"
 
-m := pm.NewMidtrans(serverKey, clientKey, false) // sandbox; true = production
+m := pm.NewMidtrans(false, serverKey, clientKey) // false = sandbox; true = production
 ```
 
 ### Snap (hosted checkout)
@@ -174,7 +174,7 @@ ok := m.VerifyNotificationSignature(signatureKey, orderID, statusCode, grossAmou
 ```go
 import "github.com/jefripunza/go-payment-method/xendit"
 
-x := xendit.NewXendit(apiKey, callbackToken)
+x := xendit.NewXendit(false, apiKey, callbackToken) // false = sandbox (test key); true = live
 invoice, err := x.InvoiceCreate(externalId, name, email, items, paymentMethods, 0)
 ```
 

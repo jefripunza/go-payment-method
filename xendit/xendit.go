@@ -15,7 +15,12 @@ type Xendit struct {
 	BaseUrl       string
 }
 
-func NewXendit(apiKey string, callbackToken string, defaultForUserId ...string) *Xendit {
+// NewXendit membuat client Xendit. isProduction menandai environment (true = live).
+// Catatan: Xendit memakai satu base URL (api.xendit.co) — environment test/live
+// dibedakan oleh API key, bukan URL. Argumen isProduction dipertahankan untuk
+// konsistensi API dengan Tripay & Midtrans.
+// defaultForUserId opsional — sub-account xenPlatform (derry from Xendit).
+func NewXendit(isProduction bool, apiKey string, callbackToken string, defaultForUserId ...string) *Xendit {
 	auth := apiKey + ":"
 	authorization := base64.StdEncoding.EncodeToString([]byte(auth))
 	var fUserId string
