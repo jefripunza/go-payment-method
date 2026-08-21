@@ -174,7 +174,7 @@ ok := m.VerifyNotificationSignature(signatureKey, orderID, statusCode, grossAmou
 ```go
 import "github.com/jefripunza/go-payment-method/xendit"
 
-x := xendit.NewXendit(false, apiKey, callbackToken) // false = sandbox (test key); true = live
+x := xendit.NewXendit(apiKey, callbackToken) // Xendit 1 domain (api.xendit.co) — test/live via API key
 invoice, err := x.InvoiceCreate(externalId, name, email, items, paymentMethods, 0)
 ```
 
