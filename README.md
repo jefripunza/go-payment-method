@@ -175,7 +175,72 @@ ok := m.VerifyNotificationSignature(signatureKey, orderID, statusCode, grossAmou
 import "github.com/jefripunza/go-payment-method/xendit"
 
 x := xendit.NewXendit(apiKey, callbackToken)
-invoice, err := x.CreateInvoice(xendit.CreateInvoiceRequest{...})
+invoice, err := x.InvoiceCreate(externalId, name, email, items, paymentMethods, 0)
+```
+
+### Payment Request & Payment (Payments v3)
+```go
+pr, _ := x.CreatePaymentRequest(&xendit.PaymentRequest{
+    ReferenceId:   "order-123",
+    Type:          "PAY", // PAY / PAY_AND_SAVE / REUSABLE_PAYMENT_CODE
+    Country:       xendit.PaymentCountryIndonesia,   // "ID"
+    Currency:      xendit.PaymentCurrencyIndonesiaRupiah, // "IDR"
+    RequestAmount: 100000,
+    CaptureMethod: "AUTOMATIC", // AUTOMATIC / MANUAL (pre-auth)
+    ChannelCode:   "QRIS",      // CARDS, QRIS, GOPAY, DANA, OVO, SHOPEEPAY, BCA/BRI/BNI/MANDIRI/PERMATA_VIRTUAL_ACCOUNT, ALFAMART, ...
+})
+status, _ := x.GetPaymentRequest(pr.Id)
+captured, _ := x.CapturePayment(latestPaymentID, 100000) // pre-auth (MANUAL)
+cancelled, _ := x.CancelPayment(latestPaymentID)
+```
+
+### Payment Token & Refund
+```go
+tok, _ := x.CreatePaymentToken(&xendit.PaymentTokenRequest{...})
+refund, _ := x.CreateRefund(&xendit.RefundRequest{ PaymentRequestID: pr.Id, Amount: 10000 })
+```
+
+### Payment Session (Payment Link / Components) — v3
+```go
+sess, _ := x.CreateSession(&xendit.CreateSessionRequest{
+    ReferenceID:   "session-123",
+    PaymentMethod: "QRIS", // CARDS, QRIS, GOPAY, DANA, OVO, SHOPEEPAY, BCA/BNI/BRI/MANDIRI/PERMATA_VIRTUAL_ACCOUNT, ALFAMART, INDOMARET
+    Amount:        100000,
+    Currency:      "IDR",
+})
+// sess.URL = link checkout Xendit untuk redirect end-user
+sessStatus, _ := x.GetSession(sess.SessionID)
+```
+
+### Payouts v3 (money-out, domestic + cross-border)
+```go
+payout, _ := x.PayoutV3Create("idem-key-001", &xendit.PayoutV3CreateRequest{
+    ReferenceID: "payout-ref-002",
+    Recipient: &xendit.PayoutV3Recipient{
+        Type: "INDIVIDUAL", GivenName: "Maria", Surname: "Santos",
+        Relationship: "CUSTOMER",
+        AccountDetails: &xendit.PayoutV3AccountDetails{
+            Currency: "PHP", AccountCountry: "PH", AccountHolderName: "Maria Santos",
+            AccountNumber: "09171234567", RoutingType1: "WALLET", RoutingValue1: "PH_GCASH",
+        },
+    },
+    PayoutDetails: &xendit.PayoutV3PayoutDetails{
+        SourceCurrency: "PHP", SourceAmount: "50000", DestinationCurrency: "PHP",
+    },
+    SourceOfFund: "BUSINESS_REVENUE", PurposeCode: "SALARY",
+})
+payoutStatus, _ := x.PayoutV3Get(payout.PayoutID)
+```
+
+### xenPlatform (sub-account / marketplace)
+```go
+acc, _ := x.CreateAccount(&xendit.CreateAccountRequest{ Email: "merchant@example.com", Type: "MANAGED" })
+accDetail, _ := x.GetAccount(acc.ID)
+```
+
+### Balance
+```go
+bal, _ := x.GetBalance() // saldo CASH dalam IDR
 ```
 
 Lihat `example/` untuk contoh lengkap.
