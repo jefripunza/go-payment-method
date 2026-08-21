@@ -310,4 +310,3 @@ func TestCheckClosedTransactionStatus(t *testing.T) {
 		t.Errorf("Expected reference %s and status PAID, got: %+v", ref, resp.Data)
 	}
 }
-

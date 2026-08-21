@@ -22,4 +22,3 @@ func (x *Xendit) GetBalance(forUserId ...string) (float64, error) {
 
 	return float64(result.Balance), nil
 }
-

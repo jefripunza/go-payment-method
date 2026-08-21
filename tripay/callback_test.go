@@ -90,4 +90,3 @@ func TestNewTripay_BaseUrl(t *testing.T) {
 		t.Errorf("Expected production BaseUrl 'https://tripay.co.id/api', got: %s", prodClient.BaseUrl)
 	}
 }
-
