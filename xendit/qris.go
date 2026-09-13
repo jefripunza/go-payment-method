@@ -129,7 +129,7 @@ type QrisCallbackData struct {
 	Currency         string                 `json:"currency"`
 	Metadata         map[string]interface{} `json:"metadata"`
 	PaymentId        string                 `json:"payment_id"`
-	BusinessId        string                 `json:"business_id"`
+	BusinessId       string                 `json:"business_id"`
 	ChannelCode      string                 `json:"channel_code"`
 	ReferenceId      string                 `json:"reference_id"`
 	CaptureMethod    string                 `json:"capture_method"`

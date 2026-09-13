@@ -15,6 +15,11 @@ type Xendit struct {
 	BaseUrl       string
 }
 
+// NewXendit membuat client Xendit.
+// Catatan: Xendit memakai SATU base URL (api.xendit.co) — environment test/live
+// dibedakan oleh API key, bukan URL. Karena itu TIDAK ada argumen isProduction
+// (boolean hanya berguna untuk switch domain, seperti Tripay & Midtrans).
+// defaultForUserId opsional — sub-account xenPlatform.
 func NewXendit(apiKey string, callbackToken string, defaultForUserId ...string) *Xendit {
 	auth := apiKey + ":"
 	authorization := base64.StdEncoding.EncodeToString([]byte(auth))

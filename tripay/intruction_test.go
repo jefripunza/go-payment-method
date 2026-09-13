@@ -9,7 +9,6 @@ import (
 
 func TestGetPaymentInstruction(t *testing.T) {
 
-
 	// We can mock the HTTP request using a local test server
 	mockResponse := PaymentInstructionResponse{
 		Success: true,
