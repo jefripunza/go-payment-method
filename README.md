@@ -74,50 +74,64 @@ ok := t.VerifySignature(rawBody, receivedSignature)
 // t.CallbackGofiberV2(c) | t.CallbackGofiberV3(c) | t.CallbackFasthttp(ctx)
 ```
 
+## Struktur
+
+Satu provider = satu folder (sub-package):
+
+```
+tripay/      — Tripay (13 endpoint, HMAC-SHA256)
+midtrans/    — Midtrans (Core API, Snap, IRIS, Payment Link, Subscription, Tokenization)
+xendit/      — Xendit (Payments v3, Payouts v3, Session, xenPlatform)
+stripe/      — Stripe (global; PaymentIntent, Checkout, Subscription, Payout)
+duitku/      — Duitku (placeholder)
+```
+
 ## Midtrans
 
 ```go
-import pm "github.com/jefripunza/go-payment-method"
+import "github.com/jefripunza/go-payment-method/midtrans"
 
-m := pm.NewMidtrans(false, serverKey, clientKey) // false = sandbox; true = production
+m := midtrans.NewMidtrans(false, serverKey, clientKey) // false = sandbox; true = production
 ```
 
 ### Snap (hosted checkout)
 ```go
-snapResp, err := m.CreateSnapTransaction(pm.SnapRequest{
-    TransactionDetails: pm.SnapTransactionDetails{OrderID: "ORDER-1", GrossAmount: 10000},
-    ItemDetails: []pm.SnapItemDetail{{ID: "P1", Price: 10000, Quantity: 1, Name: "Produk"}},
-    CustomerDetails: &pm.SnapCustomerDetails{FirstName: "Budi", Email: "budi@mail.com"},
+snapResp, err := m.CreateSnapTransaction(midtrans.SnapRequest{
+    TransactionDetails: midtrans.SnapTransactionDetails{OrderID: "ORDER-1", GrossAmount: 10000},
+    ItemDetails: []midtrans.SnapItemDetail{{ID: "P1", Price: 10000, Quantity: 1, Name: "Produk"}},
+    CustomerDetails: &midtrans.SnapCustomerDetails{FirstName: "Budi", Email: "budi@mail.com"},
 })
 // snapResp.Token, snapResp.RedirectURL
 ```
 
 ### Core API (charge & transaksi)
 ```go
-chargeResp, err := m.Charge(pm.CoreChargeRequest{
+chargeResp, err := m.Charge(midtrans.CoreChargeRequest{
     PaymentType: "bank_transfer",
-    TransactionDetails: pm.CoreTransactionDetails{OrderID: "ORDER-1", GrossAmount: 10000},
+    TransactionDetails: midtrans.CoreTransactionDetails{OrderID: "ORDER-1", GrossAmount: 10000},
     AdditionalFields: map[string]interface{}{
         "bank_transfer": map[string]interface{}{"bank": "bca"},
     },
 })
 status, err := m.GetTransactionStatus("ORDER-1")
+statusB2B, err := m.GetTransactionStatusB2B("ORDER-1")
 approved, err := m.Approve("ORDER-1")
 denied, err := m.Deny("ORDER-1")
 cancelled, err := m.Cancel("ORDER-1")
 expired, err := m.Expire("ORDER-1")
-refunded, err := m.Refund("ORDER-1", pm.RefundRequest{RefundKey: "k1", Amount: 10000, Reason: "retur"})
+captured, err := m.Capture(midtrans.CaptureRequest{TransactionID: "tx-id", GrossAmount: "10000.00"})
+refunded, err := m.Refund("ORDER-1", midtrans.RefundRequest{RefundKey: "k1", Amount: 10000, Reason: "retur"})
 refundDirect, err := m.RefundOnlineDirect("ORDER-1", 10000)
 ```
 
 ### IRIS Disbursement
 ```go
 beneficiaries, _ := m.IRISListBeneficiaries()
-created, _ := m.IRISCreateBeneficiary(pm.IRISBeneficiary{Name: "Budi", Account: "123456", Bank: "bca", AliasName: "budi"})
-payouts, _ := m.IRISCreatePayouts(pm.IRISPayoutRequest{Payouts: []pm.IRISPayoutItem{{
+created, _ := m.IRISCreateBeneficiary(midtrans.IRISBeneficiary{Name: "Budi", Account: "123456", Bank: "bca", AliasName: "budi"})
+payouts, _ := m.IRISCreatePayouts(midtrans.IRISPayoutRequest{Payouts: []midtrans.IRISPayoutItem{{
     BeneficiaryName: "Budi", BeneficiaryAccount: "123456", BeneficiaryBank: "bca", Amount: "10000"}}})
-approved, _ := m.IRISApprovePayouts(pm.IRISPayoutApproval{ReferenceNos: []string{"R1"}, OTP: "123456"})
-rejected, _ := m.IRISRejectPayouts(pm.IRISPayoutRejection{ReferenceNos: []string{"R1"}, RejectReason: "duplicate"})
+approved, _ := m.IRISApprovePayouts(midtrans.IRISPayoutApproval{ReferenceNos: []string{"R1"}, OTP: "123456"})
+rejected, _ := m.IRISRejectPayouts(midtrans.IRISPayoutRejection{ReferenceNos: []string{"R1"}, RejectReason: "duplicate"})
 balance, _ := m.IRISGetBalance()
 banks, _ := m.IRISListBankAccounts()
 valid, _ := m.IRISValidateAccount("bca", "123456")
@@ -127,8 +141,8 @@ ping, _ := m.IRISPing()
 
 ### Payment Link
 ```go
-link, _ := m.CreatePaymentLink(pm.PaymentLinkRequest{
-    TransactionDetails: pm.PaymentLinkTransactionDetails{OrderID: "PL-1", GrossAmount: 50000},
+link, _ := m.CreatePaymentLink(midtrans.PaymentLinkRequest{
+    TransactionDetails: midtrans.PaymentLinkTransactionDetails{OrderID: "PL-1", GrossAmount: 50000},
 })
 detail, _ := m.GetPaymentLink("PL-1")
 err := m.DeletePaymentLink("PL-1")
@@ -136,9 +150,9 @@ err := m.DeletePaymentLink("PL-1")
 
 ### Subscription
 ```go
-sub, _ := m.CreateSubscription(pm.SubscriptionRequest{
+sub, _ := m.CreateSubscription(midtrans.SubscriptionRequest{
     Name: "Langganan", Amount: "10000", Currency: "IDR", PaymentType: "credit_card",
-    Token: "card-token", Schedule: &pm.SubscriptionSchedule{Interval: 1, IntervalUnit: "month"},
+    Token: "card-token", Schedule: &midtrans.SubscriptionSchedule{Interval: 1, IntervalUnit: "month"},
 })
 detail, _ := m.GetSubscription("sub-id")
 updated, _ := m.UpdateSubscription("sub-id", map[string]interface{}{"amount": "20000"})
@@ -150,15 +164,15 @@ cancelled, _ := m.CancelSubscription("sub-id")
 ### Card & GoPay Tokenization
 ```go
 // Card token (frontend) — TANPA Basic Auth, hanya Client Key
-cardToken, _ := m.GetCardToken(pm.GetCardTokenRequest{
+cardToken, _ := m.GetCardToken(midtrans.GetCardTokenRequest{
     ClientKey: clientKey, CardNumber: "4811111111111114",
     CardExpMonth: "12", CardExpYear: "2025", CardCVV: "123",
 })
-registered, _ := m.RegisterCardToken(pm.RegisterCardRequest{
+registered, _ := m.RegisterCardToken(midtrans.RegisterCardRequest{
     ClientKey: clientKey, CardNumber: "4811111111111114",
     CardExpMonth: "12", CardExpYear: "2025", CardCVV: "123",
 })
-gopayToken, _ := m.CreateGoPayAccountToken(pm.CreateGoPayTokenRequest{
+gopayToken, _ := m.CreateGoPayAccountToken(midtrans.CreateGoPayTokenRequest{
     PaymentType: "gopay", Gopay: map[string]interface{}{"enable_callback": true},
 })
 gopayStatus, _ := m.GetGoPayAccountStatus("account-id")
