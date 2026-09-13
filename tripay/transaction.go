@@ -119,6 +119,8 @@ type ClosedTransactionData struct {
 	ExpiredTime          int64                    `json:"expired_time"`
 	OrderItems           []OrderItem              `json:"order_items"`
 	Instructions         []TransactionInstruction `json:"instructions,omitempty"`
+	QrString             *string                  `json:"qr_string,omitempty"`
+	QrUrl                *string                  `json:"qr_url,omitempty"`
 }
 
 type CreateClosedTransactionResponse struct {
